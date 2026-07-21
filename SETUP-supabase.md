@@ -27,6 +27,8 @@ create table venta_estado (
   id integer primary key,
   sold boolean not null default false,
   photos jsonb not null default '[]'::jsonb,
+  name text,
+  description text,
   updated_at timestamptz not null default now()
 );
 
@@ -44,6 +46,15 @@ create policy "actualizacion publica" on venta_estado
 
 -- Activar actualizaciones en tiempo real
 alter publication supabase_realtime add table venta_estado;
+```
+
+### Si ya creaste la tabla antes (nombre + descripción)
+
+En **SQL Editor** corre también:
+
+```sql
+alter table venta_estado add column if not exists name text;
+alter table venta_estado add column if not exists description text;
 ```
 
 ## Paso 3 — Copiar tus llaves
