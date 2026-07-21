@@ -418,9 +418,7 @@
   <div class="sub">Toca un artículo para ver fotos y detalles · <span id="liveDot" style="opacity:0.6;">se actualiza en vivo</span></div>
 </header>
 
-<div id="configBanner" style="display:none; max-width:900px; margin:16px auto 0; padding:14px 18px; background:#fff3cd; border:1px solid #e0c56b; border-radius:10px; color:#5c4b00; font-size:0.88rem; line-height:1.5;">
-  ⚠️ Esta página aún no está conectada a la base de datos. (El dueño debe pegar <code>SUPABASE_URL</code> y <code>SUPABASE_ANON_KEY</code> en el script.)
-</div>
+<div id="configBanner" style="display:none; max-width:900px; margin:16px auto 0; padding:14px 18px; background:#fff3cd; border:1px solid #e0c56b; border-radius:10px; color:#5c4b00; font-size:0.88rem; line-height:1.5;"></div>
 
 <div class="controls">
   <div class="search-row">
@@ -467,9 +465,11 @@ const TABLE = 'venta_estado';
 const _cfgReady = window.supabase && !SUPABASE_URL.includes('TU-PROYECTO') && !SUPABASE_ANON_KEY.includes('TU-ANON-KEY');
 const sb = _cfgReady ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 function configOk(){ return !!sb; }
-function showConfigBanner(){
+function showConfigBanner(msg){
   const b = document.getElementById('configBanner');
-  if(b) b.style.display = 'block';
+  if(!b) return;
+  b.innerHTML = msg || '⚠️ Esta página aún no está conectada a la base de datos.';
+  b.style.display = 'block';
 }
 
 const CATS = {
@@ -546,7 +546,11 @@ async function loadState(){
     (data || []).forEach(applyRow);
   }catch(e){
     console.error('No se pudo cargar de Supabase:', e);
-    showConfigBanner();
+    const code = e && e.code;
+    const missingTable = code === 'PGRST205' || /venta_estado|schema cache/i.test(String(e.message || e));
+    showConfigBanner(missingTable
+      ? '⚠️ <b>Falta crear la tabla en Supabase.</b> El dueño debe correr el SQL del Paso 2 en <code>SETUP-supabase.md</code> (SQL Editor → Run) y recargar.'
+      : '⚠️ <b>No se pudo hablar con Supabase.</b> ' + (e.message || e));
   }
   render();
   subscribeRealtime();
