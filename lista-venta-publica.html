@@ -777,10 +777,29 @@ function applyRow(row){
   else delete state.descriptions[id];
 }
 
+function isMissingTextCols(err){
+  const code = err && err.code;
+  const msg = String((err && err.message) || err || '');
+  return code === 'PGRST204' || code === '42703' || /column.*(name|description).*(does not exist|schema cache)/i.test(msg);
+}
+function isMissingTable(err){
+  const code = err && err.code;
+  const msg = String((err && err.message) || err || '');
+  if(isMissingTextCols(err)) return false;
+  return code === 'PGRST205' || /could not find the table.*venta_estado/i.test(msg);
+}
+
 async function loadState(){
   if(!configOk()){ showConfigBanner(); render(); return; }
   try{
-    const { data, error } = await sb.from(TABLE).select('id, sold, photos, name, description');
+    let data, error;
+    ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description'));
+    if(error && isMissingTextCols(error)){
+      ({ data, error } = await sb.from(TABLE).select('id, sold, photos'));
+      if(!error){
+        showConfigBanner('⚠️ <b>Fotos OK.</b> Para editar nombre y descripción, corre en SQL Editor: <code>alter table venta_estado add column if not exists name text; alter table venta_estado add column if not exists description text;</code> Luego recarga.');
+      }
+    }
     if(error) throw error;
     state.sold = {};
     state.photos = {};
@@ -789,13 +808,10 @@ async function loadState(){
     (data || []).forEach(applyRow);
   }catch(e){
     console.error('No se pudo cargar de Supabase:', e);
-    const code = e && e.code;
     const msg = String(e.message || e);
-    const missingTable = code === 'PGRST205' || /venta_estado|schema cache/i.test(msg);
-    const missingCols = code === 'PGRST204' || /column.*(name|description)/i.test(msg);
-    showConfigBanner(missingTable
+    showConfigBanner(isMissingTable(e)
       ? '⚠️ <b>Falta crear la tabla en Supabase.</b> El dueño debe correr el SQL del Paso 2 en <code>SETUP-supabase.md</code> (SQL Editor → Run) y recargar.'
-      : missingCols
+      : isMissingTextCols(e)
       ? '⚠️ <b>Falta agregar columnas name/description.</b> En SQL Editor: <code>alter table venta_estado add column if not exists name text; alter table venta_estado add column if not exists description text;</code>'
       : '⚠️ <b>No se pudo hablar con Supabase.</b> ' + msg);
   }

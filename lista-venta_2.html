@@ -790,10 +790,29 @@ function applyRow(row){
   else delete state.descriptions[id];
 }
 
+function isMissingTextCols(err){
+  const code = err && err.code;
+  const msg = String((err && err.message) || err || '');
+  return code === 'PGRST204' || code === '42703' || /column.*(name|description).*(does not exist|schema cache)/i.test(msg);
+}
+function isMissingTable(err){
+  const code = err && err.code;
+  const msg = String((err && err.message) || err || '');
+  if(isMissingTextCols(err)) return false;
+  return code === 'PGRST205' || /could not find the table.*venta_estado/i.test(msg);
+}
+
 async function loadState(){
   if(!configOk()){ showConfigBanner(); render(); return; }
   try{
-    const { data, error } = await sb.from(TABLE).select('id, sold, photos, name, description');
+    let data, error;
+    ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description'));
+    if(error && isMissingTextCols(error)){
+      ({ data, error } = await sb.from(TABLE).select('id, sold, photos'));
+      if(!error){
+        showConfigBanner('⚠️ <b>Fotos OK.</b> Para editar nombre y descripción, corre en SQL Editor: <code>alter table venta_estado add column if not exists name text; alter table venta_estado add column if not exists description text;</code> Luego recarga.');
+      }
+    }
     if(error) throw error;
     state.sold = {};
     state.photos = {};
@@ -802,13 +821,10 @@ async function loadState(){
     (data || []).forEach(applyRow);
   }catch(e){
     console.error('No se pudo cargar de Supabase:', e);
-    const code = e && e.code;
     const msg = String(e.message || e);
-    const missingTable = code === 'PGRST205' || /venta_estado|schema cache/i.test(msg);
-    const missingCols = code === 'PGRST204' || /column.*(name|description)/i.test(msg);
-    showConfigBanner(missingTable
+    showConfigBanner(isMissingTable(e)
       ? '⚠️ <b>Falta crear la tabla en Supabase.</b> Ve a SQL Editor → New query, pega el SQL de <code>SETUP-supabase.md</code> (Paso 2) y dale Run. Luego recarga esta página.'
-      : missingCols
+      : isMissingTextCols(e)
       ? '⚠️ <b>Falta agregar columnas name/description.</b> En SQL Editor corre: <code>alter table venta_estado add column if not exists name text; alter table venta_estado add column if not exists description text;</code>'
       : '⚠️ <b>No se pudo hablar con Supabase.</b> ' + msg + ' Revisa la consola del navegador (F12).');
   }
@@ -820,21 +836,29 @@ async function loadState(){
 async function saveItem(id){
   if(!configOk()){ showConfigBanner(); return; }
   const photos = (state.photos[id] || []).map(p => p.url);
-  const payload = {
+  const base = {
     id,
     sold: !!state.sold[id],
     photos,
-    name: displayName(id),
-    description: displayDesc(id) || null,
     updated_at: new Date().toISOString(),
   };
+  const withText = {
+    ...base,
+    name: displayName(id),
+    description: displayDesc(id) || null,
+  };
   try{
-    const { error } = await sb.from(TABLE).upsert(payload);
+    let { error } = await sb.from(TABLE).upsert(withText);
+    if(error && isMissingTextCols(error)){
+      ({ error } = await sb.from(TABLE).upsert(base));
+      if(!error){
+        showConfigBanner('⚠️ Guardé fotos/vendido. Para nombre y descripción, agrega las columnas en SQL Editor (ver SETUP-supabase.md).');
+      }
+    }
     if(error) throw error;
   }catch(e){
     console.error('No se pudo guardar en Supabase:', e);
-    const msg = String(e.message || e);
-    if(/column.*(name|description)/i.test(msg) || e.code === 'PGRST204'){
+    if(isMissingTextCols(e)){
       alert('Falta agregar las columnas name y description en Supabase. Corre en SQL Editor:\n\nalter table venta_estado add column if not exists name text;\nalter table venta_estado add column if not exists description text;');
     } else {
       alert('No se pudo guardar el cambio en la nube. Revisa tu conexión e inténtalo de nuevo.');
