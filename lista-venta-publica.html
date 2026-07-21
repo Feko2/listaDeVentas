@@ -3,99 +3,185 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cosas a vender</title>
+<title>Venta de cochera</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Passion+One:wght@700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --kraft: #E7DCC5;
-    --kraft-dark: #D8C9A8;
-    --ink: #2A2621;
-    --tape: #C9A227;
-    --tape-dark: #a5820f;
-    --teal: #1F3A3D;
-    --teal-light: #2C5F5D;
-    --sold: #8a8375;
-    --card: #FBF7EE;
-    --red-tag: #A83E33;
+:root{
+    --paper: #C9C1A8;
+    --paper-deep: #AFA68C;
+    --ink: #151311;
+    --sign: #0E3B2C;
+    --sign-mid: #165A42;
+    --flyer: #F0C93A;
+    --flyer-dark: #C9A61E;
+    --stamp: #B71C1C;
+    --card: #F2EEE0;
+    --mute: #5C5648;
+    --sold: #7A7466;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: var(--kraft);
-    background-image:
-      radial-gradient(circle at 1px 1px, rgba(0,0,0,0.035) 1px, transparent 0);
-    background-size: 14px 14px;
+    font-family: 'Sora', sans-serif;
     color: var(--ink);
     min-height:100vh;
-    padding-bottom: 60px;
+    padding-bottom: 72px;
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(ellipse 120% 80% at 10% -10%, rgba(240,201,58,0.22), transparent 55%),
+      radial-gradient(ellipse 90% 60% at 100% 0%, rgba(14,59,44,0.12), transparent 50%),
+      repeating-linear-gradient(0deg, transparent, transparent 11px, rgba(0,0,0,0.025) 11px, rgba(0,0,0,0.025) 12px),
+      repeating-linear-gradient(90deg, transparent, transparent 11px, rgba(0,0,0,0.02) 11px, rgba(0,0,0,0.02) 12px);
+  }
+  @keyframes tapeDrop {
+    from { transform: translateY(-18px) rotate(-6deg); opacity: 0; }
+    to { transform: translateY(0) rotate(-3deg); opacity: 1; }
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes stampPop {
+    0% { transform: translate(-50%,-50%) rotate(-12deg) scale(1.25); opacity: 0; }
+    70% { transform: translate(-50%,-50%) rotate(-8deg) scale(0.96); opacity: 1; }
+    100% { transform: translate(-50%,-50%) rotate(-8deg) scale(1); opacity: 1; }
   }
   header{
-    background: var(--teal);
-    color: #F4EEDD;
-    padding: 22px 18px 26px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.06), transparent 40%),
+      linear-gradient(135deg, var(--sign) 0%, #0A2E22 55%, var(--sign-mid) 100%);
+    color: #F6F1DE;
+    padding: 28px 18px 34px;
     position: relative;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    border-bottom: 5px solid var(--flyer);
+    overflow: hidden;
   }
-  header h1{
-    margin:0;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 1.7rem;
-    letter-spacing: 0.5px;
-  }
-  header .sub{
-    margin-top:4px;
-    font-size: 0.85rem;
-    opacity:0.75;
-  }
-  header::after{
+  header::before{
     content:"";
     position:absolute;
-    bottom:-10px; left:20px;
-    width:60px; height:20px;
-    background: var(--tape);
-    opacity:0.85;
+    inset:0;
+    background:
+      repeating-linear-gradient(-18deg, transparent, transparent 18px, rgba(0,0,0,0.06) 18px, rgba(0,0,0,0.06) 19px);
+    pointer-events:none;
+  }
+  .brand-kicker{
+    position:relative;
+    z-index:1;
+    display:inline-block;
+    font-family: 'Passion One', cursive;
+    font-size: clamp(0.95rem, 3.5vw, 1.15rem);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--flyer);
+    margin: 0 0 6px;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+  }
+  header h1{
+    position:relative;
+    z-index:1;
+    margin:0;
+    font-family: 'Passion One', cursive;
+    font-size: clamp(2.2rem, 8vw, 3.2rem);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    max-width: 14ch;
+  }
+  header .sub{
+    position:relative;
+    z-index:1;
+    margin-top: 10px;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    opacity: 0.88;
+    max-width: 36rem;
+    font-weight: 500;
+  }
+  header .panel-tag{
+    display:inline-block;
+    margin-top: 12px;
+    position:relative;
+    z-index:1;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--flyer);
+    color: var(--ink);
+    padding: 5px 10px;
+    border-radius: 3px;
+    transform: rotate(-1.5deg);
+  }
+  .tape{
+    position:absolute;
+    bottom:-12px; left:22px;
+    width: 78px; height: 22px;
+    background: linear-gradient(180deg, #F5D85A, var(--flyer-dark));
+    opacity: 0.95;
     transform: rotate(-3deg);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+    animation: tapeDrop 0.55s ease-out both;
+    z-index:2;
+  }
+  .tape::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background: repeating-linear-gradient(90deg, transparent 0 8px, rgba(0,0,0,0.08) 8px 10px);
   }
 
   .controls{
-    max-width: 900px;
-    margin: 30px auto 10px;
+    max-width: 920px;
+    margin: 34px auto 10px;
     padding: 0 16px;
   }
   .search-row{
     display:flex;
     gap:8px;
-    margin-bottom:12px;
+    margin-bottom:14px;
   }
   .search-row input{
     flex:1;
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--kraft-dark);
+    padding: 12px 14px;
+    border-radius: 4px;
+    border: 2px solid var(--sign);
     font-size: 0.95rem;
+    font-family: inherit;
     background: var(--card);
+    color: var(--ink);
+  }
+  .search-row input:focus{
+    outline: none;
+    border-color: var(--flyer-dark);
+    box-shadow: 0 0 0 3px rgba(240,201,58,0.35);
   }
   .filters{
     display:flex;
     flex-wrap:wrap;
     gap:8px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
   .chip{
-    padding: 6px 14px;
-    border-radius: 999px;
-    border: 1.5px solid var(--teal);
+    padding: 7px 12px;
+    border-radius: 3px;
+    border: 2px solid var(--sign);
     background: transparent;
-    color: var(--teal);
-    font-size: 0.82rem;
-    font-weight: 600;
+    color: var(--sign);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
     cursor:pointer;
-    transition: all .15s ease;
+    transition: background .15s ease, color .15s ease, transform .15s ease;
     white-space:nowrap;
   }
+  .chip:hover{ transform: translateY(-1px); }
   .chip.active{
-    background: var(--teal);
-    color: #F4EEDD;
+    background: var(--sign);
+    color: var(--flyer);
   }
   .toolbar{
     display:flex;
@@ -112,15 +198,9 @@
     gap:6px;
     cursor:pointer;
     user-select:none;
+    font-weight: 600;
+    color: var(--mute);
   }
-  .count-pill{
-    background: var(--card);
-    border: 1px solid var(--kraft-dark);
-    border-radius: 10px;
-    padding: 8px 14px;
-    font-size: 0.85rem;
-  }
-  .count-pill b{ color: var(--teal); }
   .price-filter{
     display:flex;
     align-items:center;
@@ -129,75 +209,83 @@
     margin-bottom: 10px;
   }
   .price-filter span{
-    font-size: 0.8rem;
-    color: #6b6455;
-    font-weight:600;
+    font-size: 0.75rem;
+    color: var(--mute);
+    font-weight:700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
   .sort-btn{
     display:flex;
     align-items:center;
     gap:6px;
-    padding: 7px 14px;
-    border-radius: 8px;
-    border: 1.5px solid var(--teal);
+    padding: 7px 12px;
+    border-radius: 3px;
+    border: 2px solid var(--sign);
     background: transparent;
-    color: var(--teal);
-    font-size: 0.82rem;
-    font-weight: 600;
+    color: var(--sign);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
     cursor:pointer;
   }
   .sort-btn.active{
-    background: var(--teal);
-    color: #F4EEDD;
+    background: var(--sign);
+    color: var(--flyer);
   }
 
   .grid{
-    max-width: 900px;
-    margin: 16px auto;
+    max-width: 920px;
+    margin: 18px auto;
     padding: 0 16px;
     display:grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 14px;
+    gap: 16px;
   }
 
   .card{
     background: var(--card);
-    border-radius: 10px;
-    border: 1px solid rgba(0,0,0,0.08);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    border-radius: 4px;
+    border: 2px solid rgba(21,19,17,0.12);
     overflow:hidden;
     display:flex;
     flex-direction:column;
     position:relative;
-    transition: opacity .2s, transform .15s;
+    transition: transform .18s ease, border-color .18s ease;
     cursor:pointer;
+    animation: cardIn 0.45s ease both;
+    box-shadow: 3px 3px 0 rgba(14,59,44,0.12);
   }
-  .card:active{
-    transform: scale(0.98);
+  .card:nth-child(3n){ animation-delay: 0.04s; }
+  .card:nth-child(3n+1){ animation-delay: 0.08s; }
+  .card:nth-child(3n+2){ animation-delay: 0.12s; }
+  .card:hover{
+    transform: translateY(-3px) rotate(-0.4deg);
+    border-color: var(--sign);
   }
-  .card.sold{
-    opacity: 0.55;
-  }
+  .card:active{ transform: scale(0.985); }
+  .card.sold{ opacity: 0.62; }
   .card.sold .card-body::after{
     content:"VENDIDO";
     position:absolute;
-    top: 44%;
+    top: 48%;
     left:50%;
     transform: translate(-50%,-50%) rotate(-8deg);
-    font-family: Georgia, serif;
-    font-weight:bold;
-    font-size:1.3rem;
-    color: var(--red-tag);
-    border: 3px solid var(--red-tag);
-    padding: 2px 14px;
-    border-radius: 6px;
-    letter-spacing: 2px;
+    font-family: 'Passion One', cursive;
+    font-size:1.55rem;
+    color: var(--stamp);
+    border: 3px solid var(--stamp);
+    padding: 2px 12px;
+    letter-spacing: 0.08em;
     pointer-events:none;
+    background: rgba(242,238,224,0.85);
+    animation: stampPop 0.4s ease-out both;
   }
 
   .photo-box{
-    height: 130px;
-    background: var(--kraft-dark);
+    height: 148px;
+    background:
+      linear-gradient(135deg, var(--paper-deep), #9A9178);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -211,24 +299,26 @@
   }
   .photo-box .placeholder{
     font-size: 0.75rem;
-    color: #6b6455;
+    color: #4d473a;
     text-align:center;
     padding: 8px;
+    font-weight: 600;
   }
   .photo-box .placeholder svg{
     display:block;
     margin: 0 auto 4px;
-    opacity: 0.5;
+    opacity: 0.55;
   }
   .photo-count{
     position:absolute;
-    top:6px; right:6px;
-    background: rgba(0,0,0,0.55);
-    color:white;
-    font-size:0.65rem;
+    top:8px; right:8px;
+    background: var(--sign);
+    color: var(--flyer);
+    font-size:0.68rem;
     font-weight:700;
-    padding: 2px 7px;
-    border-radius: 999px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
   }
 
   .card-body{
@@ -241,17 +331,17 @@
   }
   .cat-badge{
     align-self:flex-start;
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.06em;
     font-weight:700;
     padding: 3px 8px;
-    border-radius: 5px;
+    border-radius: 2px;
     color: white;
   }
   .name{
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: 0.98rem;
+    font-weight: 700;
     line-height:1.25;
   }
   .price-row{
@@ -262,20 +352,39 @@
     padding-top: 6px;
   }
   .price{
-    font-family: Georgia, serif;
-    font-weight:bold;
-    font-size: 1.15rem;
-    color: var(--red-tag);
+    font-family: 'Passion One', cursive;
+    font-size: 1.45rem;
+    color: var(--stamp);
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .sold-toggle{
+    font-size: 0.7rem;
+    border: 2px solid var(--sign);
+    background: transparent;
+    color: var(--sign);
+    border-radius: 3px;
+    padding: 4px 8px;
+    cursor:pointer;
+    font-weight:700;
+    font-family: inherit;
+  }
+  .sold-toggle.is-sold{
+    background: var(--sold);
+    border-color: var(--sold);
+    color:white;
   }
   .status-tag{
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
     padding: 4px 8px;
-    border-radius: 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
   .status-tag.available{
-    background: rgba(31,58,61,0.1);
-    color: var(--teal);
+    background: rgba(14,59,44,0.12);
+    color: var(--sign);
   }
   .status-tag.gone{
     background: var(--sold);
@@ -285,56 +394,56 @@
   .empty{
     text-align:center;
     padding: 40px 20px;
-    color: #6b6455;
+    color: var(--mute);
     font-size: 0.9rem;
   }
 
   footer{
     text-align:center;
-    font-size: 0.75rem;
-    color: #6b6455;
-    padding: 20px;
+    font-size: 0.78rem;
+    color: var(--mute);
+    padding: 28px 16px;
+    font-weight: 500;
   }
 
-  /* Modal / ficha */
   .modal-overlay{
     display:none;
     position:fixed;
     inset:0;
-    background: rgba(20,18,14,0.65);
+    background: rgba(14,20,16,0.72);
     z-index: 1000;
     align-items:flex-start;
     justify-content:center;
     overflow-y:auto;
     padding: 24px 14px;
   }
-  .modal-overlay.open{
-    display:flex;
-  }
+  .modal-overlay.open{ display:flex; }
   .modal{
     background: var(--card);
-    border-radius: 14px;
+    border-radius: 6px;
     max-width: 480px;
     width:100%;
     overflow:hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border: 3px solid var(--sign);
     position:relative;
+    box-shadow: 6px 6px 0 rgba(14,59,44,0.25);
   }
   .modal-close{
     position:absolute;
     top:10px; right:10px;
-    width:32px; height:32px;
-    border-radius:50%;
-    background: rgba(0,0,0,0.5);
-    color:white;
+    width:34px; height:34px;
+    border-radius: 3px;
+    background: var(--sign);
+    color: var(--flyer);
     border:none;
     font-size:1.1rem;
     cursor:pointer;
     z-index:5;
+    font-weight: 700;
   }
   .modal-main-photo{
     height: 260px;
-    background: var(--kraft-dark);
+    background: var(--paper-deep);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -345,91 +454,202 @@
     object-fit: cover;
   }
   .modal-main-photo .placeholder{
-    color:#6b6455;
+    color: var(--mute);
     font-size:0.85rem;
     text-align:center;
+    font-weight: 600;
   }
   .thumb-row{
     display:flex;
     gap:8px;
     padding: 10px 14px;
     overflow-x:auto;
-    background: var(--kraft);
+    background: var(--paper);
   }
   .thumb{
     width:56px; height:56px;
-    border-radius:8px;
+    border-radius:4px;
     object-fit:cover;
     flex-shrink:0;
     cursor:pointer;
     border: 2px solid transparent;
   }
-  .thumb.active{
-    border-color: var(--teal);
+  .thumb.active{ border-color: var(--sign); }
+  .thumb-add{
+    width:56px; height:56px;
+    border-radius:4px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: var(--card);
+    border: 2px dashed var(--sign);
+    color: var(--sign);
+    font-size: 1.3rem;
+    cursor:pointer;
+    font-weight: 700;
   }
-  .modal-body{
-    padding: 16px 18px 20px;
+  .thumb-remove{ position:relative; }
+  .thumb-remove .x{
+    position:absolute;
+    top:-6px; right:-6px;
+    width:18px; height:18px;
+    border-radius: 50%;
+    background: var(--stamp);
+    color:white;
+    font-size:0.65rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
   }
+  .modal-body{ padding: 16px 18px 20px; }
   .modal-body .cat-badge{
     display:inline-block;
     font-size: 0.68rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.06em;
     font-weight:700;
     padding: 4px 10px;
-    border-radius: 5px;
+    border-radius: 2px;
     color: white;
     margin-bottom: 10px;
   }
   .modal-body h2{
     margin: 0 0 6px;
-    font-family: Georgia, serif;
-    font-size: 1.3rem;
-    line-height:1.3;
+    font-family: 'Passion One', cursive;
+    font-size: 1.7rem;
+    line-height:1.05;
+    letter-spacing: 0.01em;
+  }
+  .modal-body .field-label{
+    display:block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--mute);
+    margin: 0 0 4px;
+  }
+  .modal-body .edit-name{
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 12px;
+    padding: 8px 10px;
+    border: 2px solid var(--paper-deep);
+    border-radius: 4px;
+    font-family: 'Passion One', cursive;
+    font-size: 1.35rem;
+    color: var(--ink);
+    background: #fff;
+  }
+  .modal-body .edit-desc{
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 12px;
+    padding: 8px 10px;
+    border: 2px solid var(--paper-deep);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--ink);
+    background: #fff;
+    resize: vertical;
+    min-height: 72px;
+  }
+  .modal-body .edit-name:focus,
+  .modal-body .edit-desc:focus{
+    outline: none;
+    border-color: var(--sign);
   }
   .modal-body .modal-desc{
     margin: 0 0 12px;
     font-size: 0.92rem;
     line-height: 1.45;
-    color: #5a5348;
+    color: var(--mute);
     white-space: pre-wrap;
   }
   .modal-body .modal-price{
-    font-family: Georgia, serif;
-    font-weight:bold;
-    font-size: 1.6rem;
-    color: var(--red-tag);
+    font-family: 'Passion One', cursive;
+    font-size: 2rem;
+    color: var(--stamp);
     margin-bottom: 14px;
+    line-height: 1;
+  }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .modal-actions button{
+    flex:1;
+    min-width: 140px;
+    padding: 11px 12px;
+    border-radius: 3px;
+    font-size: 0.82rem;
+    font-weight:700;
+    font-family: inherit;
+    cursor:pointer;
+    border: 2px solid var(--sign);
+    background: transparent;
+    color: var(--sign);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .modal-actions .primary{
+    background: var(--sign);
+    color: var(--flyer);
+  }
+  .modal-actions .is-sold{
+    background: var(--sold);
+    border-color: var(--sold);
+    color:white;
   }
   .modal-status{
     display:inline-block;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 700;
     padding: 8px 14px;
-    border-radius: 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
   .modal-status.available{
-    background: rgba(31,58,61,0.1);
-    color: var(--teal);
+    background: rgba(14,59,44,0.12);
+    color: var(--sign);
   }
   .modal-status.gone{
     background: var(--sold);
     color: white;
   }
+  input[type=file]{ display:none; }
+
+  .count-pill{
+    background: var(--card);
+    border: 2px solid var(--sign);
+    border-radius: 4px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    box-shadow: 3px 3px 0 rgba(14,59,44,0.1);
+  }
+  .count-pill b{ color: var(--sign); }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🏷️ Cosas a vender</h1>
-  <div class="sub">Toca un artículo para ver fotos y detalles · <span id="liveDot" style="opacity:0.6;">se actualiza en vivo</span></div>
+  <div class="brand-kicker">Todo se vende · precios firmes</div>
+  <h1>Venta de cochera</h1>
+  <div class="sub">Toca un artículo para ver fotos y detalles · <span id="liveDot" style="opacity:0.75;">se actualiza en vivo</span></div>
+  <div class="tape" aria-hidden="true"></div>
 </header>
 
 <div id="configBanner" style="display:none; max-width:900px; margin:16px auto 0; padding:14px 18px; background:#fff3cd; border:1px solid #e0c56b; border-radius:10px; color:#5c4b00; font-size:0.88rem; line-height:1.5;"></div>
 
 <div class="controls">
   <div class="search-row">
-    <input type="text" id="search" placeholder="Buscar artículo... (ej. cafetera, silla)">
+    <input type="text" id="search" placeholder="Buscar en la cochera… (cafetera, silla, basurero)">
   </div>
   <div class="filters" id="filters"></div>
   <div class="price-filter">
@@ -445,9 +665,9 @@
 </div>
 
 <div class="grid" id="grid"></div>
-<div class="empty" id="emptyMsg" style="display:none;">No se encontraron artículos con ese filtro.</div>
+<div class="empty" id="emptyMsg" style="display:none;">Nada por aquí… prueba otro filtro o busca otra cosa.</div>
 
-<footer>Lista de venta · disponibilidad en tiempo real</footer>
+<footer>Venta de cochera · lo que ves aquí se actualiza al momento</footer>
 
 <!-- Modal de ficha -->
 <div class="modal-overlay" id="modalOverlay">
@@ -480,11 +700,11 @@ function showConfigBanner(msg){
 }
 
 const CATS = {
-  cocina: { label: 'Cocina', color: '#2C5F5D' },
-  muebles: { label: 'Muebles', color: '#a5820f' },
-  bano: { label: 'Baño', color: '#5B7C99' },
-  electronica: { label: 'Electrónica', color: '#7A4E9E' },
-  hogar: { label: 'Hogar', color: '#A83E33' },
+  cocina: { label: 'Cocina', color: '#165A42' },
+  muebles: { label: 'Muebles', color: '#8A6A12' },
+  bano: { label: 'Baño', color: '#3D5A73' },
+  electronica: { label: 'Electrónica', color: '#5A3D73' },
+  hogar: { label: 'Hogar', color: '#B71C1C' },
 };
 
 const ITEMS = [
@@ -670,7 +890,7 @@ function render(){
       if(photos.length > 1){
         const countBadge = document.createElement('div');
         countBadge.className = 'photo-count';
-        countBadge.textContent = '📷 ' + photos.length;
+        countBadge.textContent = photos.length + ' fotos';
         photoBox.appendChild(countBadge);
       }
     } else {
