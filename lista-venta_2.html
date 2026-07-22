@@ -442,6 +442,7 @@
     font-weight: 700;
   }
   .modal-main-photo{
+    /* lightbox-ready */
     height: 260px;
     background: var(--paper-deep);
     display:flex;
@@ -725,6 +726,64 @@
     font-weight: 600;
     color: var(--mute);
   }
+
+  .modal-main-photo.has-photo{
+    cursor: zoom-in;
+  }
+  .modal-main-photo.has-photo::after{
+    content: "Toca para ver grande";
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    background: rgba(14,59,44,0.82);
+    color: var(--flyer);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 5px 8px;
+    border-radius: 3px;
+    pointer-events: none;
+  }
+  .modal-main-photo{ position: relative; }
+  .lightbox{
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(10, 14, 12, 0.92);
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    cursor: zoom-out;
+  }
+  .lightbox.open{ display: flex; }
+  .lightbox img{
+    max-width: min(100%, 1100px);
+    max-height: calc(100vh - 36px);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border: 3px solid var(--flyer);
+    border-radius: 4px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.45);
+    cursor: default;
+  }
+  .lightbox-close{
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 3px;
+    background: var(--flyer);
+    color: var(--ink);
+    font-size: 1.35rem;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 2;
+  }
 </style>
 </head>
 <body>
@@ -803,6 +862,12 @@
 </div>
 
 <canvas id="exportCanvas" style="display:none;"></canvas>
+
+
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Cerrar">✕</button>
+  <img id="lightboxImg" alt="Foto ampliada">
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -1297,6 +1362,25 @@ function closeModal(){
   document.getElementById('modalOverlay').classList.remove('open');
 }
 
+
+function openLightbox(url){
+  if(!url) return;
+  const box = document.getElementById('lightbox');
+  const img = document.getElementById('lightboxImg');
+  if(!box || !img) return;
+  img.src = url;
+  box.classList.add('open');
+  box.setAttribute('aria-hidden', 'false');
+}
+function closeLightbox(){
+  const box = document.getElementById('lightbox');
+  const img = document.getElementById('lightboxImg');
+  if(!box) return;
+  box.classList.remove('open');
+  box.setAttribute('aria-hidden', 'true');
+  if(img) img.removeAttribute('src');
+}
+
 function renderModal(id){
   const item = items.find(i => i.id === id);
   if(!item) return;
@@ -1309,10 +1393,14 @@ function renderModal(id){
 
   const mainPhoto = document.getElementById('modalMainPhoto');
   mainPhoto.innerHTML = '';
+  mainPhoto.classList.toggle('has-photo', photos.length > 0);
+  mainPhoto.onclick = null;
   if(photos.length){
     const img = document.createElement('img');
     img.src = photos[activeIdx].url;
+    img.alt = displayName(item);
     mainPhoto.appendChild(img);
+    mainPhoto.onclick = () => openLightbox(photos[activeIdx].url);
   } else {
     mainPhoto.innerHTML = `<div class="placeholder">Sin fotos todavía</div>`;
   }
@@ -1608,6 +1696,19 @@ document.getElementById('sortNone').addEventListener('click', () => {
   });
   on('addName', 'keydown', (e) => {
     if(e.key === 'Enter'){ e.preventDefault(); const p = document.getElementById('addPrice'); if(p) p.focus(); }
+  });
+})();
+
+
+(function wireLightbox(){
+  const box = document.getElementById('lightbox');
+  const closeBtn = document.getElementById('lightboxClose');
+  if(closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeLightbox(); });
+  if(box) box.addEventListener('click', (e) => {
+    if(e.target.id === 'lightbox') closeLightbox();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeLightbox();
   });
 })();
 
