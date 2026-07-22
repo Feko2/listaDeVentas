@@ -748,7 +748,7 @@ const CATS = {
   hogar: { label: 'Hogar', color: '#B71C1C' },
 };
 
-const ITEMS = [
+const BASE_ITEMS = [
   {id:1, name:'Air fryer', price:2000, cat:'cocina'},
   {id:2, name:'Cafetera Nescafé Dolce Gusto', price:1200, cat:'cocina'},
   {id:3, name:'Mesita de sala', price:1500, cat:'muebles'},
@@ -779,6 +779,8 @@ const ITEMS = [
   {id:28, name:'Nutribullet', price:800, cat:'cocina'},
   {id:29, name:'Basurero de escritorio', price:150, cat:'muebles'},
 ];
+
+let items = BASE_ITEMS.map(i => ({ ...i }));
 
 let state = {
   filter: 'all',
@@ -818,6 +820,18 @@ function applyRow(row){
   else delete state.names[id];
   if(row.description != null && String(row.description).trim()) state.descriptions[id] = String(row.description);
   else delete state.descriptions[id];
+
+  const existing = items.find(i => i.id === id);
+  const cat = row.cat && CATS[row.cat] ? row.cat : null;
+  const price = row.price != null && row.price !== '' ? Number(row.price) : null;
+  const nm = row.name != null ? String(row.name).trim() : '';
+  if(existing){
+    if(price != null && !Number.isNaN(price)) existing.price = price;
+    if(cat) existing.cat = cat;
+    if(nm) existing.name = nm;
+  } else if(price != null && !Number.isNaN(price) && cat){
+    items.push({ id, name: nm || ('Artículo #' + id), price, cat });
+  }
 }
 
 
@@ -846,12 +860,18 @@ function isMissingTextCols(err){
   const msg = String((err && err.message) || err || '');
   return code === 'PGRST204' || code === '42703' || /column.*(name|description).*(does not exist|schema cache)/i.test(msg);
 }
+function isMissingCatalogCols(err){
+  const code = err && err.code;
+  const msg = String((err && err.message) || err || '');
+  return code === 'PGRST204' || code === '42703' || /column.*(price|cat).*(does not exist|schema cache)/i.test(msg);
+}
 function isMissingTable(err){
   const code = err && err.code;
   const msg = String((err && err.message) || err || '');
-  if(isMissingTextCols(err)) return false;
+  if(isMissingTextCols(err) || isMissingCatalogCols(err)) return false;
   return code === 'PGRST205' || /could not find the table.*venta_estado/i.test(msg);
 }
+const CATALOG_SQL = 'alter table venta_estado add column if not exists price numeric; alter table venta_estado add column if not exists cat text;';
 
 async function loadState(){
   state._loadStarted = Date.now();
@@ -859,14 +879,18 @@ async function loadState(){
   if(!configOk()){ showConfigBanner(); await finishLoading(); render(); return; }
   try{
     let data, error;
-    ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description'));
-    if(error && isMissingTextCols(error)){
-      ({ data, error } = await sb.from(TABLE).select('id, sold, photos'));
-      if(!error){
-        showConfigBanner('⚠️ <b>Fotos OK.</b> Para editar nombre y descripción, corre en SQL Editor: <code>alter table venta_estado add column if not exists name text; alter table venta_estado add column if not exists description text;</code> Luego recarga.');
+    ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description, price, cat'));
+    if(error && isMissingCatalogCols(error)){
+      ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description'));
+      if(!error && false){
+        showConfigBanner('⚠️ <b>Para agregar artículos nuevos</b> corre en SQL Editor: <code>' + CATALOG_SQL + '</code> Luego recarga.');
       }
     }
+    if(error && isMissingTextCols(error)){
+      ({ data, error } = await sb.from(TABLE).select('id, sold, photos'));
+    }
     if(error) throw error;
+    items = BASE_ITEMS.map(i => ({ ...i }));
     state.sold = {};
     state.photos = {};
     state.names = {};
@@ -900,6 +924,9 @@ function subscribeRealtime(){
         delete state.photos[row.id];
         delete state.names[row.id];
         delete state.descriptions[row.id];
+        if(!BASE_ITEMS.some(b => b.id === row.id)){
+          items = items.filter(i => i.id !== row.id);
+        }
       } else {
         applyRow(row);
       }
@@ -937,7 +964,7 @@ function render(){
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
 
-  let filtered = ITEMS.filter(item => {
+  let filtered = items.filter(item => {
     if(state.filter !== 'all' && item.cat !== state.filter) return false;
     const q = state.search.toLowerCase();
     if(q){
@@ -958,7 +985,7 @@ function render(){
 
   filtered.forEach(item => {
     const isSold = !!state.sold[item.id];
-    const cat = CATS[item.cat];
+    const cat = CATS[item.cat] || { label: 'Otro', color: '#165A42' };
     const photos = state.photos[item.id] || [];
     const card = document.createElement('div');
     card.className = 'card' + (isSold ? ' sold' : '');
@@ -1015,9 +1042,9 @@ function render(){
     grid.appendChild(card);
   });
 
-  const available = ITEMS.filter(i => !state.sold[i.id]).length;
+  const available = items.filter(i => !state.sold[i.id]).length;
   document.getElementById('countPill').innerHTML =
-    `<b>${available}</b> disponibles de ${ITEMS.length}`;
+    `<b>${available}</b> disponibles de ${items.length}`;
 
   if(openItemId !== null){
     renderModal(openItemId);
@@ -1037,7 +1064,7 @@ function closeModal(){
 }
 
 function renderModal(id){
-  const item = ITEMS.find(i => i.id === id);
+  const item = items.find(i => i.id === id);
   if(!item) return;
   const cat = CATS[item.cat];
   const photos = state.photos[id] || [];
