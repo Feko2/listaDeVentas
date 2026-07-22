@@ -779,6 +779,29 @@
   </div>
 </div>
 
+
+<!-- Modal agregar artículo -->
+<div class="modal-overlay" id="addModalOverlay">
+  <div class="modal add-modal" id="addModal">
+    <button class="modal-close" id="addModalClose" type="button">✕</button>
+    <div class="modal-body">
+      <h2>Nuevo artículo</h2>
+      <label class="field-label" for="addName">Nombre</label>
+      <input id="addName" type="text" placeholder="Ej. Lámpara de pie" maxlength="120">
+      <label class="field-label" for="addPrice">Precio (MXN)</label>
+      <input id="addPrice" type="number" min="0" step="1" placeholder="500">
+      <label class="field-label" for="addCat">Categoría</label>
+      <select id="addCat"></select>
+      <label class="field-label" for="addDesc">Descripción (opcional)</label>
+      <textarea id="addDesc" placeholder="Estado, medidas, incluye…"></textarea>
+      <div class="modal-actions">
+        <button type="button" id="addCancelBtn">Cancelar</button>
+        <button type="button" class="primary" id="addSaveBtn">Agregar a la cochera</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <canvas id="exportCanvas" style="display:none;"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -924,14 +947,12 @@ async function finishLoading(){
 }
 
 function isMissingTextCols(err){
-  const code = err && err.code;
   const msg = String((err && err.message) || err || '');
-  return code === 'PGRST204' || code === '42703' || /column.*(name|description).*(does not exist|schema cache)/i.test(msg);
+  return /column.*(name|description).*(does not exist|schema cache)/i.test(msg);
 }
 function isMissingCatalogCols(err){
-  const code = err && err.code;
   const msg = String((err && err.message) || err || '');
-  return code === 'PGRST204' || code === '42703' || /column.*(price|cat).*(does not exist|schema cache)/i.test(msg);
+  return /column.*(price|cat).*(does not exist|schema cache)/i.test(msg);
 }
 function isMissingTable(err){
   const code = err && err.code;
@@ -944,38 +965,43 @@ const CATALOG_SQL = 'alter table venta_estado add column if not exists price num
 async function loadState(){
   state._loadStarted = Date.now();
   setLoading(true);
-  if(!configOk()){ showConfigBanner(); await finishLoading(); render(); return; }
   try{
-    let data, error;
-    ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description, price, cat'));
-    if(error && isMissingCatalogCols(error)){
-      ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description'));
-      if(!error && true){
-        showConfigBanner('⚠️ <b>Para agregar artículos nuevos</b> corre en SQL Editor: <code>' + CATALOG_SQL + '</code> Luego recarga.');
+    if(!configOk()){ showConfigBanner(); return; }
+    try{
+      let data, error;
+      ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description, price, cat'));
+      if(error && isMissingCatalogCols(error)){
+        ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description'));
+        if(!error){
+          showConfigBanner('⚠️ <b>Para agregar artículos nuevos</b> corre en SQL Editor: <code>' + CATALOG_SQL + '</code> Luego recarga.');
+        }
       }
+      if(error && isMissingTextCols(error)){
+        ({ data, error } = await sb.from(TABLE).select('id, sold, photos'));
+      }
+      if(error) throw error;
+      items = BASE_ITEMS.map(i => ({ ...i }));
+      state.sold = {};
+      state.photos = {};
+      state.names = {};
+      state.descriptions = {};
+      (data || []).forEach(applyRow);
+    }catch(e){
+      console.error('No se pudo cargar de Supabase:', e);
+      const msg = String(e.message || e);
+      showConfigBanner(isMissingTable(e)
+        ? '⚠️ <b>Falta crear la tabla en Supabase.</b> Ve a SQL Editor → New query, pega el SQL de <code>SETUP-supabase.md</code> (Paso 2) y dale Run. Luego recarga esta página.'
+        : isMissingTextCols(e)
+        ? '⚠️ <b>Falta agregar columnas name/description.</b> En SQL Editor corre: <code>alter table venta_estado add column if not exists name text; alter table venta_estado add column if not exists description text;</code>'
+        : isMissingCatalogCols(e)
+        ? '⚠️ <b>Para agregar artículos</b> corre: <code>' + CATALOG_SQL + '</code>'
+        : '⚠️ <b>No se pudo hablar con Supabase.</b> ' + msg + ' Revisa la consola del navegador (F12).');
     }
-    if(error && isMissingTextCols(error)){
-      ({ data, error } = await sb.from(TABLE).select('id, sold, photos'));
-    }
-    if(error) throw error;
-    items = BASE_ITEMS.map(i => ({ ...i }));
-    state.sold = {};
-    state.photos = {};
-    state.names = {};
-    state.descriptions = {};
-    (data || []).forEach(applyRow);
-  }catch(e){
-    console.error('No se pudo cargar de Supabase:', e);
-    const msg = String(e.message || e);
-    showConfigBanner(isMissingTable(e)
-      ? '⚠️ <b>Falta crear la tabla en Supabase.</b> Ve a SQL Editor → New query, pega el SQL de <code>SETUP-supabase.md</code> (Paso 2) y dale Run. Luego recarga esta página.'
-      : isMissingTextCols(e)
-      ? '⚠️ <b>Falta agregar columnas name/description.</b> En SQL Editor corre: <code>alter table venta_estado add column if not exists name text; alter table venta_estado add column if not exists description text;</code>'
-      : '⚠️ <b>No se pudo hablar con Supabase.</b> ' + msg + ' Revisa la consola del navegador (F12).');
+  }finally{
+    await finishLoading();
+    render();
+    subscribeRealtime();
   }
-  await finishLoading();
-  render();
-  subscribeRealtime();
 }
 
 // Guarda el estado completo (vendido + fotos + texto) de un artículo en la nube
@@ -1568,16 +1594,22 @@ document.getElementById('sortNone').addEventListener('click', () => {
   render();
 });
 
-document.getElementById('addItemBtn').addEventListener('click', openAddModal);
-document.getElementById('addModalClose').addEventListener('click', closeAddModal);
-document.getElementById('addCancelBtn').addEventListener('click', closeAddModal);
-document.getElementById('addSaveBtn').addEventListener('click', createItemFromForm);
-document.getElementById('addModalOverlay').addEventListener('click', (e) => {
-  if(e.target.id === 'addModalOverlay') closeAddModal();
-});
-document.getElementById('addName').addEventListener('keydown', (e) => {
-  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addPrice').focus(); }
-});
+(function wireAddItemUi(){
+  const on = (id, ev, fn) => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener(ev, fn);
+  };
+  on('addItemBtn', 'click', openAddModal);
+  on('addModalClose', 'click', closeAddModal);
+  on('addCancelBtn', 'click', closeAddModal);
+  on('addSaveBtn', 'click', createItemFromForm);
+  on('addModalOverlay', 'click', (e) => {
+    if(e.target.id === 'addModalOverlay') closeAddModal();
+  });
+  on('addName', 'keydown', (e) => {
+    if(e.key === 'Enter'){ e.preventDefault(); const p = document.getElementById('addPrice'); if(p) p.focus(); }
+  });
+})();
 
 loadState();
 </script>

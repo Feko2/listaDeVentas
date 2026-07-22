@@ -856,14 +856,12 @@ async function finishLoading(){
 }
 
 function isMissingTextCols(err){
-  const code = err && err.code;
   const msg = String((err && err.message) || err || '');
-  return code === 'PGRST204' || code === '42703' || /column.*(name|description).*(does not exist|schema cache)/i.test(msg);
+  return /column.*(name|description).*(does not exist|schema cache)/i.test(msg);
 }
 function isMissingCatalogCols(err){
-  const code = err && err.code;
   const msg = String((err && err.message) || err || '');
-  return code === 'PGRST204' || code === '42703' || /column.*(price|cat).*(does not exist|schema cache)/i.test(msg);
+  return /column.*(price|cat).*(does not exist|schema cache)/i.test(msg);
 }
 function isMissingTable(err){
   const code = err && err.code;
