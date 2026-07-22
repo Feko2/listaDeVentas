@@ -636,6 +636,66 @@
   }
   .count-pill b{ color: var(--sign); }
 
+  .seller-note{
+    max-width: 920px;
+    margin: 22px auto 0;
+    padding: 0 16px;
+  }
+  .seller-note-inner{
+    background: var(--card);
+    border: 2px solid var(--sign);
+    border-radius: 4px;
+    padding: 16px 18px 18px;
+    box-shadow: 4px 4px 0 rgba(14,59,44,0.12);
+  }
+  .seller-note .eyebrow{
+    margin: 0 0 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sign);
+  }
+  .seller-note .story{
+    margin: 0 0 14px;
+    font-size: 0.98rem;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .seller-contact{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+  }
+  .seller-contact .name{
+    font-family: 'Passion One', cursive;
+    font-size: 1.35rem;
+    letter-spacing: 0.02em;
+    color: var(--sign);
+    line-height: 1;
+  }
+  .seller-contact a{
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    border-radius: 3px;
+    border: 2px solid var(--sign);
+  }
+  .seller-contact a.wa{
+    background: var(--flyer);
+    color: var(--ink);
+  }
+  .seller-contact a.tel{
+    background: transparent;
+    color: var(--sign);
+  }
+
   .loading-panel{
     display:none;
     max-width: 920px;
@@ -738,6 +798,18 @@
   <div class="tape" aria-hidden="true"></div>
 </header>
 
+<section class="seller-note" aria-label="Sobre esta venta">
+  <div class="seller-note-inner">
+    <p class="eyebrow">Por qué vendo</p>
+    <p class="story">Hola, soy Felipe. Me acabo de graduar del TEC de Monterrey y por motivo de traslado estoy rematando varias cosas.</p>
+    <div class="seller-contact">
+      <span class="name">Felipe Ramos</span>
+      <a class="wa" href="https://wa.me/525540047517?text=Hola%20Felipe%2C%20vi%20tu%20venta%20de%20cochera" target="_blank" rel="noopener">WhatsApp 55 4004 7517</a>
+      <a class="tel" href="tel:+525540047517">Llamar</a>
+    </div>
+  </div>
+</section>
+
 <div id="configBanner" style="display:none; max-width:900px; margin:16px auto 0; padding:14px 18px; background:#fff3cd; border:1px solid #e0c56b; border-radius:10px; color:#5c4b00; font-size:0.88rem; line-height:1.5;"></div>
 
 <div class="controls">
@@ -767,7 +839,7 @@
 <div class="grid" id="grid" hidden></div>
 <div class="empty" id="emptyMsg" style="display:none;">Nada por aquí… prueba otro filtro o busca otra cosa.</div>
 
-<footer>Venta de cochera · lo que ves aquí se actualiza al momento</footer>
+<footer>Venta de cochera · Felipe Ramos · <a href="https://wa.me/525540047517" style="color:inherit;font-weight:700;">55 4004 7517</a></footer>
 
 <!-- Modal de ficha -->
 <div class="modal-overlay" id="modalOverlay">
