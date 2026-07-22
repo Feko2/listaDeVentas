@@ -29,6 +29,8 @@ create table venta_estado (
   photos jsonb not null default '[]'::jsonb,
   name text,
   description text,
+  price numeric,
+  cat text,
   updated_at timestamptz not null default now()
 );
 
@@ -48,14 +50,18 @@ create policy "actualizacion publica" on venta_estado
 alter publication supabase_realtime add table venta_estado;
 ```
 
-### Si ya creaste la tabla antes (nombre + descripción)
+### Si ya creaste la tabla antes
 
-En **SQL Editor** corre también:
+En **SQL Editor** corre también lo que te falte:
 
 ```sql
 alter table venta_estado add column if not exists name text;
 alter table venta_estado add column if not exists description text;
+alter table venta_estado add column if not exists price numeric;
+alter table venta_estado add column if not exists cat text;
 ```
+
+Las columnas `price` y `cat` hacen falta para **agregar artículos nuevos** desde el panel privado.
 
 ## Paso 3 — Copiar tus llaves
 

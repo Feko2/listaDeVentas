@@ -638,6 +638,60 @@
   }
   .totals b{ color: var(--sign); }
 
+  .add-item-btn{
+    padding: 8px 14px;
+    border-radius: 3px;
+    border: 2px solid var(--sign);
+    background: var(--flyer);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+  }
+  .add-item-btn:hover{ filter: brightness(0.97); }
+  .add-modal .modal-body{ padding-top: 22px; }
+  .add-modal h2{
+    margin: 0 0 14px;
+    font-family: 'Passion One', cursive;
+    font-size: 1.7rem;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  .add-modal .field-label{
+    display:block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--mute);
+    margin: 0 0 4px;
+  }
+  .add-modal input,
+  .add-modal select,
+  .add-modal textarea{
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 12px;
+    padding: 9px 10px;
+    border: 2px solid var(--paper-deep);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--ink);
+    background: #fff;
+  }
+  .add-modal textarea{ min-height: 72px; resize: vertical; }
+  .add-modal input:focus,
+  .add-modal select:focus,
+  .add-modal textarea:focus{
+    outline: none;
+    border-color: var(--sign);
+  }
+  .add-modal .modal-actions{ margin-top: 4px; }
+
   .loading-panel{
     display:none;
     max-width: 920px;
@@ -698,6 +752,7 @@
   </div>
   <div class="toolbar">
     <label><input type="checkbox" id="hideSold"> Ocultar vendidos</label>
+    <button type="button" class="add-item-btn" id="addItemBtn">+ Agregar artículo</button>
     <div class="totals" id="totals"></div>
   </div>
 </div>
@@ -755,7 +810,7 @@ const CATS = {
   hogar: { label: 'Hogar', color: '#B71C1C' },
 };
 
-const ITEMS = [
+const BASE_ITEMS = [
   {id:1, name:'Air fryer', price:2000, cat:'cocina'},
   {id:2, name:'Cafetera Nescafé Dolce Gusto', price:1200, cat:'cocina'},
   {id:3, name:'Mesita de sala', price:1500, cat:'muebles'},
@@ -787,6 +842,8 @@ const ITEMS = [
   {id:29, name:'Basurero de escritorio', price:150, cat:'muebles'},
 ];
 
+let items = BASE_ITEMS.map(i => ({ ...i }));
+
 let state = {
   filter: 'all',
   search: '',
@@ -805,7 +862,7 @@ let openItemId = null;
 const fmt = n => '$' + n.toLocaleString('es-MX');
 
 function baseItem(id){
-  return ITEMS.find(i => i.id === id);
+  return items.find(i => i.id === id);
 }
 function displayName(itemOrId){
   const item = typeof itemOrId === 'number' ? baseItem(itemOrId) : itemOrId;
@@ -831,6 +888,18 @@ function applyRow(row){
   else delete state.names[id];
   if(row.description != null && String(row.description).trim()) state.descriptions[id] = String(row.description);
   else delete state.descriptions[id];
+
+  const existing = items.find(i => i.id === id);
+  const cat = row.cat && CATS[row.cat] ? row.cat : null;
+  const price = row.price != null && row.price !== '' ? Number(row.price) : null;
+  const nm = row.name != null ? String(row.name).trim() : '';
+  if(existing){
+    if(price != null && !Number.isNaN(price)) existing.price = price;
+    if(cat) existing.cat = cat;
+    if(nm) existing.name = nm;
+  } else if(price != null && !Number.isNaN(price) && cat){
+    items.push({ id, name: nm || ('Artículo #' + id), price, cat });
+  }
 }
 
 
@@ -859,12 +928,18 @@ function isMissingTextCols(err){
   const msg = String((err && err.message) || err || '');
   return code === 'PGRST204' || code === '42703' || /column.*(name|description).*(does not exist|schema cache)/i.test(msg);
 }
+function isMissingCatalogCols(err){
+  const code = err && err.code;
+  const msg = String((err && err.message) || err || '');
+  return code === 'PGRST204' || code === '42703' || /column.*(price|cat).*(does not exist|schema cache)/i.test(msg);
+}
 function isMissingTable(err){
   const code = err && err.code;
   const msg = String((err && err.message) || err || '');
-  if(isMissingTextCols(err)) return false;
+  if(isMissingTextCols(err) || isMissingCatalogCols(err)) return false;
   return code === 'PGRST205' || /could not find the table.*venta_estado/i.test(msg);
 }
+const CATALOG_SQL = 'alter table venta_estado add column if not exists price numeric; alter table venta_estado add column if not exists cat text;';
 
 async function loadState(){
   state._loadStarted = Date.now();
@@ -872,14 +947,18 @@ async function loadState(){
   if(!configOk()){ showConfigBanner(); await finishLoading(); render(); return; }
   try{
     let data, error;
-    ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description'));
-    if(error && isMissingTextCols(error)){
-      ({ data, error } = await sb.from(TABLE).select('id, sold, photos'));
-      if(!error){
-        showConfigBanner('⚠️ <b>Fotos OK.</b> Para editar nombre y descripción, corre en SQL Editor: <code>alter table venta_estado add column if not exists name text; alter table venta_estado add column if not exists description text;</code> Luego recarga.');
+    ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description, price, cat'));
+    if(error && isMissingCatalogCols(error)){
+      ({ data, error } = await sb.from(TABLE).select('id, sold, photos, name, description'));
+      if(!error && true){
+        showConfigBanner('⚠️ <b>Para agregar artículos nuevos</b> corre en SQL Editor: <code>' + CATALOG_SQL + '</code> Luego recarga.');
       }
     }
+    if(error && isMissingTextCols(error)){
+      ({ data, error } = await sb.from(TABLE).select('id, sold, photos'));
+    }
     if(error) throw error;
+    items = BASE_ITEMS.map(i => ({ ...i }));
     state.sold = {};
     state.photos = {};
     state.names = {};
@@ -901,7 +980,8 @@ async function loadState(){
 
 // Guarda el estado completo (vendido + fotos + texto) de un artículo en la nube
 async function saveItem(id){
-  if(!configOk()){ showConfigBanner(); return; }
+  if(!configOk()){ showConfigBanner(); return false; }
+  const item = baseItem(id);
   const photos = (state.photos[id] || []).map(p => p.url);
   const base = {
     id,
@@ -914,8 +994,19 @@ async function saveItem(id){
     name: displayName(id),
     description: displayDesc(id) || null,
   };
+  const withCatalog = {
+    ...withText,
+    price: item ? item.price : null,
+    cat: item ? item.cat : null,
+  };
   try{
-    let { error } = await sb.from(TABLE).upsert(withText);
+    let { error } = await sb.from(TABLE).upsert(withCatalog);
+    if(error && isMissingCatalogCols(error)){
+      ({ error } = await sb.from(TABLE).upsert(withText));
+      if(!error){
+        showConfigBanner('⚠️ Guardé el artículo sin precio/categoría en la nube. Corre: <code>' + CATALOG_SQL + '</code>');
+      }
+    }
     if(error && isMissingTextCols(error)){
       ({ error } = await sb.from(TABLE).upsert(base));
       if(!error){
@@ -923,14 +1014,68 @@ async function saveItem(id){
       }
     }
     if(error) throw error;
+    return true;
   }catch(e){
     console.error('No se pudo guardar en Supabase:', e);
-    if(isMissingTextCols(e)){
+    if(isMissingCatalogCols(e)){
+      alert('Para agregar artículos corre en SQL Editor:\n\n' + CATALOG_SQL);
+    } else if(isMissingTextCols(e)){
       alert('Falta agregar las columnas name y description en Supabase. Corre en SQL Editor:\n\nalter table venta_estado add column if not exists name text;\nalter table venta_estado add column if not exists description text;');
     } else {
       alert('No se pudo guardar el cambio en la nube. Revisa tu conexión e inténtalo de nuevo.');
     }
+    return false;
   }
+}
+
+function openAddModal(){
+  const sel = document.getElementById('addCat');
+  if(sel && !sel.options.length){
+    Object.entries(CATS).forEach(([key, val]) => {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = val.label;
+      sel.appendChild(opt);
+    });
+  }
+  document.getElementById('addName').value = '';
+  document.getElementById('addPrice').value = '';
+  document.getElementById('addDesc').value = '';
+  if(sel) sel.value = 'hogar';
+  document.getElementById('addModalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('addName').focus(), 50);
+}
+function closeAddModal(){
+  document.getElementById('addModalOverlay').classList.remove('open');
+}
+async function createItemFromForm(){
+  const name = document.getElementById('addName').value.trim();
+  const price = Number(document.getElementById('addPrice').value);
+  const cat = document.getElementById('addCat').value;
+  const description = document.getElementById('addDesc').value.trim();
+  if(!name){ alert('Ponle un nombre al artículo.'); return; }
+  if(!(price >= 0) || Number.isNaN(price)){ alert('Pon un precio válido (puede ser 0).'); return; }
+  if(!CATS[cat]){ alert('Elige una categoría.'); return; }
+  const id = Math.max(0, ...items.map(i => i.id)) + 1;
+  items.push({ id, name, price, cat });
+  state.names[id] = name;
+  if(description) state.descriptions[id] = description;
+  else delete state.descriptions[id];
+  state.sold[id] = false;
+  state.photos[id] = [];
+  const ok = await saveItem(id);
+  if(!ok){
+    items = items.filter(i => i.id !== id);
+    delete state.names[id];
+    delete state.descriptions[id];
+    delete state.sold[id];
+    delete state.photos[id];
+    render();
+    return;
+  }
+  closeAddModal();
+  render();
+  openModal(id);
 }
 
 // Escucha cambios en tiempo real (por si abres el panel en dos dispositivos)
@@ -947,6 +1092,9 @@ function subscribeRealtime(){
         delete state.photos[row.id];
         delete state.names[row.id];
         delete state.descriptions[row.id];
+        if(!BASE_ITEMS.some(b => b.id === row.id)){
+          items = items.filter(i => i.id !== row.id);
+        }
       } else {
         applyRow(row);
       }
@@ -1013,7 +1161,7 @@ function render(){
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
 
-  let filtered = ITEMS.filter(item => {
+  let filtered = items.filter(item => {
     if(state.filter !== 'all' && item.cat !== state.filter) return false;
     const q = state.search.toLowerCase();
     if(q){
@@ -1034,7 +1182,7 @@ function render(){
 
   filtered.forEach(item => {
     const isSold = !!state.sold[item.id];
-    const cat = CATS[item.cat];
+    const cat = CATS[item.cat] || { label: 'Otro', color: '#165A42' };
     const photos = state.photos[item.id] || [];
     const card = document.createElement('div');
     card.className = 'card' + (isSold ? ' sold' : '');
@@ -1097,8 +1245,8 @@ function render(){
     grid.appendChild(card);
   });
 
-  const totalAll = ITEMS.reduce((s,i)=>s+i.price,0);
-  const totalSold = ITEMS.filter(i=>state.sold[i.id]).reduce((s,i)=>s+i.price,0);
+  const totalAll = items.reduce((s,i)=>s+i.price,0);
+  const totalSold = items.filter(i=>state.sold[i.id]).reduce((s,i)=>s+i.price,0);
   const totalPending = totalAll - totalSold;
   document.getElementById('totals').innerHTML =
     `<span>Total: <b>${fmt(totalAll)}</b></span>` +
@@ -1124,7 +1272,7 @@ function closeModal(){
 }
 
 function renderModal(id){
-  const item = ITEMS.find(i => i.id === id);
+  const item = items.find(i => i.id === id);
   if(!item) return;
   const cat = CATS[item.cat];
   const photos = state.photos[id] || [];
@@ -1418,6 +1566,17 @@ document.getElementById('sortDesc').addEventListener('click', () => {
 document.getElementById('sortNone').addEventListener('click', () => {
   state.sortOrder = 'none';
   render();
+});
+
+document.getElementById('addItemBtn').addEventListener('click', openAddModal);
+document.getElementById('addModalClose').addEventListener('click', closeAddModal);
+document.getElementById('addCancelBtn').addEventListener('click', closeAddModal);
+document.getElementById('addSaveBtn').addEventListener('click', createItemFromForm);
+document.getElementById('addModalOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'addModalOverlay') closeAddModal();
+});
+document.getElementById('addName').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addPrice').focus(); }
 });
 
 loadState();
